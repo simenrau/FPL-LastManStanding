@@ -18,7 +18,7 @@ leagueForm.addEventListener("submit", async (e) => {
 
 async function fetchMostRecentlyCompletedRound() {
   const response = await fetch(
-    "https://fpl-lastmanstanding.herokuapp.com/api/bootstrap-static/"
+    "https://lastmanstanding.herokuapp.com/api/bootstrap-static/"
   );
   const data = await response.json();
   const events = data.events;
@@ -40,7 +40,7 @@ async function fetchResults(leagueId, startingRound) {
   // Fetch league data from the API
 
   const response = await fetch(
-    `http://fpl-lastmanstanding.herokuapp.com/api/leagues-classic/${leagueId}/standings/`
+    `http://lastmanstanding.herokuapp.com/api/leagues-classic/${leagueId}/standings/`
   );
   const data = await response.json();
 
@@ -61,7 +61,7 @@ async function fetchResults(leagueId, startingRound) {
     let roundData = [];
     for (let player of activePlayers) {
       const playerResponse = await fetch(
-        `http://fpl-lastmanstanding.herokuapp.com/api/entry/${player.entry}/event/${round}/picks/`
+        `http://lastmanstanding.herokuapp.com/api/entry/${player.entry}/event/${round}/picks/`
       );
       const playerData = await playerResponse.json();
       player.round_score = playerData.entry_history.points;
