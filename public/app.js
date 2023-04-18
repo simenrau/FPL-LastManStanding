@@ -40,7 +40,7 @@ async function fetchResults(leagueId, startingRound) {
   // Fetch league data from the API
 
   const response = await fetch(
-    `http://lastmanstanding.herokuapp.com/api/leagues-classic/${leagueId}/standings/`
+    `https://lastmanstanding.herokuapp.com/api/leagues-classic/${leagueId}/standings/`
   );
   const data = await response.json();
 
@@ -61,7 +61,7 @@ async function fetchResults(leagueId, startingRound) {
     let roundData = [];
     for (let player of activePlayers) {
       const playerResponse = await fetch(
-        `http://lastmanstanding.herokuapp.com/api/entry/${player.entry}/event/${round}/picks/`
+        `https://lastmanstanding.herokuapp.com/api/entry/${player.entry}/event/${round}/picks/`
       );
       const playerData = await playerResponse.json();
       player.round_score = playerData.entry_history.points;
