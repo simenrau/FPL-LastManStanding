@@ -39,6 +39,9 @@ async function fetchMostRecentlyCompletedRound() {
 async function fetchResults(leagueId, startingRound) {
   // Fetch league data from the API
 
+  const spinner = document.getElementById("spinner");
+  spinner.style.display = "block";
+
   const response = await fetch(
     `https://lastmanstanding.herokuapp.com/api/leagues-classic/${leagueId}/standings/`
   );
@@ -85,6 +88,7 @@ async function fetchResults(leagueId, startingRound) {
     );
   }
 
+  spinner.style.display = "none";
   return standings;
 }
 
