@@ -6,7 +6,6 @@ leagueForm.addEventListener("submit", async (e) => {
 
   const leagueId = document.getElementById("league-id").value;
   const startingRound = document.getElementById("starting-round").value;
-
   try {
     const standings = await fetchResults(leagueId, startingRound);
     displayResults(standings, startingRound);
@@ -15,6 +14,12 @@ leagueForm.addEventListener("submit", async (e) => {
     alert("An error occurred while fetching the data. Please try again.");
   }
 });
+
+const includeGoalsScoredCheckbox = document.getElementById("include-goals-scored");
+includeGoalsScoredCheckbox.addEventListener("change", () => {
+  displayResults(standings, startingRound);
+});
+
 
 async function fetchMostRecentlyCompletedRound() {
   const response = await fetch(
@@ -33,6 +38,10 @@ async function fetchMostRecentlyCompletedRound() {
     }
   }
 
+  if (events[mostRecentlyCompletedRound].is_current == true){
+    mostRecentlyCompletedRound++;
+  }
+
   return mostRecentlyCompletedRound;
 }
 
@@ -48,12 +57,17 @@ async function fetchResults(leagueId, startingRound) {
   const data = await response.json();
 
   const mostRecentlyCompletedRound = await fetchMostRecentlyCompletedRound();
+  const bootstrap = await fetch(
+    `https://lastmanstanding.herokuapp.com/api/bootstrap-static/`
+  );
+  const bootstrapData = await bootstrap.json();
 
   startingRound = parseInt(startingRound);
   let activePlayers = data.standings.results;
   let endRound = startingRound + activePlayers.length - 2;
   let standings = [];
-
+  
+  const fetchedPickData = {};
   for (let round = startingRound; round <= endRound; round++) {
     // Fetch round scores for each player
 
@@ -69,15 +83,49 @@ async function fetchResults(leagueId, startingRound) {
       const playerData = await playerResponse.json();
       player.round_score = playerData.entry_history.points;
       player.name = player.player_name;
+      player.goals = 0;
+      
+      if (includeGoalsScoredCheckbox.checked) {
+        for (let pick of playerData.picks) {
+          let pickData;
+  
+          if (fetchedPickData[pick.element]) {
+            // If pick data is already fetched, use it from the fetchedPickData object
+            pickData = fetchedPickData[pick.element];
+          } else {
+            // If pick data is not yet fetched, fetch it and store it in the fetchedPickData object
+            const pickResponse = await fetch(
+              `https://lastmanstanding.herokuapp.com/api/element-summary/${pick.element}/`
+            );
+            pickData = await pickResponse.json();
+            fetchedPickData[pick.element] = pickData;
+          }
+          
+          try {
+            goals = fetchedPickData[pick.element].history.find(item => item.round === round);
+            player.goals += goals.goals_scored;
+          }
+          catch {
+            continue;
+          }
+        }
+      }
 
       roundData.push({
         round_score: player.round_score,
         player_name: player.player_name,
+        goals_scored: player.goals,
       });
     }
 
-    roundData.sort((a, b) => b.round_score - a.round_score);
-
+    roundData.sort((a, b) => {
+      // Sort primarily by round_score, and secondarily by goals_scored
+      if (b.round_score !== a.round_score) {
+        return b.round_score - a.round_score;
+      } else {
+        return b.goals_scored - a.goals_scored;
+      }
+    });
     // Add the roundData to the standings-array
     standings.push(roundData);
     let lastMan = roundData[roundData.length - 1].player_name;
@@ -100,6 +148,7 @@ function displayResults(roundStandings, startingRound) {
     return;
   }
 
+  const includeGoalsScoredCheckbox = document.getElementById("include-goals-scored");
   const buttonsContainer = document.createElement("div");
   buttonsContainer.classList.add("buttons-container");
 
@@ -135,22 +184,24 @@ function displayResults(roundStandings, startingRound) {
     const table = document.createElement("table");
     table.innerHTML = `
               <tr>
-                  <th>Rank</th>
+                  <th style="text-align:center">Rank</th>
                   <th>Player</th>
-                  <th>Round Score</th>
+                  <th style="text-align:center">Score</th>
+                  ${includeGoalsScoredCheckbox.checked ? '<th style="text-align:center">Goals Scored</th>' : ''}
               </tr>
           `;
-
-    standings.sort((a, b) => b.round_score - a.round_score);
-    const lowestScore = standings[standings.length - 1].round_score;
 
     standings.forEach((player, index) => {
       const row = document.createElement("tr");
       row.innerHTML = `
-                  <td>${index + 1}</td>
+                  <td style="text-align:center">${index + 1}</td>
                   <td>${player.player_name}</td>
-                  <td>${player.round_score}</td>
+                  <td style="text-align:center">${player.round_score}</td>
               `;
+      if (includeGoalsScoredCheckbox.checked) {
+        row.innerHTML += `<td style="text-align:center">${player.goals_scored}</td>`;
+      }
+          
 
       table.appendChild(row);
     });
@@ -164,3 +215,4 @@ function displayResults(roundStandings, startingRound) {
 
   buttonsDiv.lastChild.click();
 }
+
